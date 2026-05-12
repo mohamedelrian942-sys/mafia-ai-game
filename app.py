@@ -1,47 +1,50 @@
 import streamlit as st
 import google.generativeai as genai
 
-# إعداد الصفحة لتناسب شاشة الهاتف
+# 1. إعدادات الصفحة
 st.set_page_config(page_title="مافيا محمد عدنان", page_icon="🕵️", layout="centered")
 
-# --- الإعدادات ---
-API_KEY = "ضع_مفتاحك_هنا" # استبدله بالمفتاح الذي نسخته
+# 2. ضع مفتاح الـ API الخاص بك هنا بين العلامتين
+API_KEY = "AIzaSyB5k4agOUL57Qtm6MDz8UB4SSbcxFeQWc4" 
+
 genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash') # أو الموديل الذي اخترته
 
-# اختر الموديل المتاح لديك (Flash أو Pro)
-model = genai.GenerativeModel('gemini-1.5-flash') 
-
-# --- تهيئة ذاكرة اللعبة ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    # إرسال تعليمات النظام تلقائياً عند بدء التشغيل
+# 3. تهيئة الجلسة (ذاكرة اللعبة)
+if "chat" not in st.session_state:
+    # هنا نضع التعليمات البرمجية لـ "عادل" ليعرف دوره من أول لحظة
+    system_instruction = (
+        "أنت 'عادل'، مدير لعبة المافيا بأسلوب محمد عدنان. "
+        "مهمتك إدارة اللعبة، توزيع الأدوار، وكتابة قصص جرائم مشوقة. "
+        "ابدأ دائماً بالترحيب باللاعبين واسأل عن عددهم وأسمائهم."
+    )
     st.session_state.chat = model.start_chat(history=[])
-    
-# --- واجهة المستخدم ---
-st.title("🕵️ مافيا: الجريمة والذكاء")
-st.subheader("إدارة: عادل (المدير الذكي)")
+    # إرسال التعليمات في خلفية التطبيق
+    st.session_state.chat.send_message(system_instruction)
+    st.session_state.messages = []
 
-# عرض الرسائل السابقة
+# 4. واجهة المستخدم
+st.title("🕵️ مافيا: الجريمة والذكاء")
+st.markdown("---")
+
+# عرض المحادثة
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# مدخلات اللاعب (المدير)
-if prompt := st.chat_input("اكتب عدد اللاعبين أو أحداث الليلة..."):
-    # عرض رسالتك
+# إدخال المدير
+if prompt := st.chat_input("اكتب هنا (مثلاً: نحن 6 لاعبين)..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # رد Gemini
     with st.chat_message("assistant"):
-        with st.spinner("عادل يفكر في الجريمة القادمة..."):
-            response = st.session_state.chat.send_message(prompt)
-            full_response = response.text
-            st.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+        response = st.session_state.chat.send_message(prompt)
+        st.markdown(response.text)
+        st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-# زر لإعادة ضبط اللعبة
-if st.button("بدء لعبة جديدة"):
+# زر المسح
+if st.sidebar.button("لعبة جديدة 🔄"):
     st.session_state.messages = []
+    st.session_state.chat = model.start_chat(history=[])
     st.rerun()
