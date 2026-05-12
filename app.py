@@ -17,9 +17,19 @@ if "messages" not in st.session_state:
     st.session_state.messages.append({"role": "user", "content": "ابدأ اللعبة الآن، رحب بالمدير واطلب منه إدخال أسماء الـ 14 لاعباً."})
 
 # عرض المحادثة
-for message in st.session_state.messages[1:]: # تخطي رسالة الإعداد
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+with st.chat_message("assistant"):
+        # استخدام stream=True يجعل الرد يظهر تدريجياً وبسرعة
+        response = st.session_state.chat.send_message(prompt, stream=True)
+        
+        # عرض النص كلمة بكلمة
+        full_response = ""
+        placeholder = st.empty()
+        for chunk in response:
+            full_response += chunk.text
+            placeholder.markdown(full_response + "▌")
+        placeholder.markdown(full_response)
+        
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # إدخال المدير للأوامر
 if prompt := st.chat_input("ماذا حدث الآن؟ (مثلاً: المافيا قتلوا أحمد)"):
