@@ -1,14 +1,10 @@
 import streamlit as st
 import random
 
-# --- إعدادات الصفحة الاحترافية ---
-st.set_page_config(
-    page_title="Mafia Pro | مافيا المحترفين",
-    page_icon="🕵️",
-    layout="centered"
-)
+# --- إعدادات الصفحة ---
+st.set_page_config(page_title="مدير مافيا الاحترافي", page_icon="🎙️", layout="centered")
 
-# --- قاعدة بيانات السيناريوهات الاحترافية ---
+# --- قاعدة بيانات السيناريوهات ---
 SCENARIOS = {
     "💎 سرقة الموناليزا": {
         "location": "متحف اللوفر - القاعة الكبرى",
@@ -19,128 +15,121 @@ SCENARIOS = {
         "location": "مقصورة الدرجة الأولى",
         "weapon": "سم في الشاي / خنجر أثري",
         "roles": ["قائد القطار", "طبيب جراح", "أرملة ثرية", "جندي سابق", "طباخ عربة الطعام", "مساعد شخصي"]
-    },
-    "⚽ معسكر المنتخب": {
-        "location": "غرفة الملابس - ملعب لوسيل",
-        "weapon": "تسريب الخطة / تسميم المشروب",
-        "roles": ["المدرب الفني", "حارس المرمى", "محلل فيديو", "طبيب الفريق", "رئيس البعثة", "مدلك اللاعبين"]
-    },
-    "🎭 كواليس المسرح": {
-        "location": "غرفة الماكياج - خلف الستار",
-        "weapon": "سقوط ثريا / تبديل مسدس التمثيل",
-        "roles": ["الممثل الرئيسي", "مخرجة العرض", "فني الإضاءة", "كاتب السيناريو", "عاملة الأزياء", "ملقن النصوص"]
     }
 }
 
-# --- تنسيق التصميم بـ CSS ---
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #FF4B4B;
-        color: white;
-        font-weight: bold;
-    }
-    .player-card {
-        padding: 20px;
-        border-radius: 15px;
-        background-color: #262730;
-        border-left: 5px solid #FF4B4B;
-        margin-bottom: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 # --- واجهة التطبيق ---
-st.title("🕵️ مافيا المحترفين")
-st.caption("الدمج المثالي بين نظام 'بيس كيك' وحماس 'محمد عدنان'")
+st.title("🎙️ مدير جولة المافيا")
+st.caption("أنت القائد.. والتطبيق يعطيك الأوامر")
 
-# 1. قائمة اللاعبين
-with st.expander("👥 إدارة اللاعبين", expanded=True):
-    names_input = st.text_area("أدخل الأسماء (اسم في كل سطر):", height=120)
-    players = [n.strip() for n in names_input.split('\n') if n.strip()]
-    st.info(f"عدد اللاعبين الحالي: {len(players)}")
+# 1. إدخال اللاعبين
+names_input = st.sidebar.text_area("👤 أسماء اللاعبين (كل اسم في سطر):", height=150)
+players = [n.strip() for n in names_input.split('\n') if n.strip()]
 
-# 2. اختيار السيناريو
-st.subheader("🎬 اختر السيناريو")
-col1, col2 = st.columns([2, 1])
-with col1:
-    selected_key = st.selectbox("القصة:", list(SCENARIOS.keys()))
-with col2:
-    mafia_count = st.number_input("عدد المافيا:", 1, 3, 1)
+# 2. اختيار السيناريو وعدد المافيا
+selected_key = st.sidebar.selectbox("🎬 اختر السيناريو:", list(SCENARIOS.keys()))
+mafia_count = st.sidebar.number_input("🤫 عدد المافيا:", 1, 3, 1)
 
-# 3. توزيع الأدوار
-if st.button("🚀 ابدأ الجولة الآن"):
-    if len(players) < 3:
-        st.error("⚠️ نحتاج لـ 3 لاعبين على الأقل.")
+# 3. زر بدء الجولة
+if st.sidebar.button("🚀 بدء جولة جديدة"):
+    if len(players) < 4:
+        st.error("⚠️ تحتاج 4 لاعبين على الأقل للعب بنظام الأوامر.")
     else:
-        # اختيار المافيا (برا السالفة)
+        # التوزيع
         mafias = random.sample(players, mafia_count)
         others = [p for p in players if p not in mafias]
+        detective = random.choice(others)
+        doctor = random.choice([p for p in others if p != detective])
         
-        # توزيع الأدوار الخاصة (عدنان)
-        detective = random.choice(others) if others else None
-        doctor = random.choice([p for p in others if p != detective]) if len(others) > 1 else None
-        
-        # تخصيص البيانات
         scenario = SCENARIOS[selected_key]
         shuffled_roles = list(scenario['roles'])
         random.shuffle(shuffled_roles)
         
         game_assignments = {}
         for i, p in enumerate(players):
-            role_title = "مواطن صالِح"
-            icon = "👤"
-            if p in mafias:
-                role_title, icon = "مافيا (برا السالفة)", "🤫"
-            elif p == detective:
-                role_title, icon = "المحقق (القناص)", "🔍"
-            elif p == doctor:
-                role_title, icon = "الطبيب (الإسعاف)", "🧪"
+            role_type = "مواطن"
+            if p in mafias: role_type = "مافيا"
+            elif p == detective: role_type = "محقق"
+            elif p == doctor: role_type = "طبيب"
             
             game_assignments[p] = {
-                "title": role_title,
-                "icon": icon,
+                "role": role_type,
                 "character": shuffled_roles[i % len(shuffled_roles)],
                 "location": scenario['location'] if p not in mafias else "؟؟؟",
                 "weapon": scenario['weapon'] if p not in mafias else "؟؟؟"
             }
         
         st.session_state.game = game_assignments
-        st.session_state.game_on = True
-        st.success("✅ تم التوزيع سرّياً! مرر الهاتف.")
+        st.session_state.step = 1 # نبدأ بالخطوة الأولى
+        st.success("✅ تم التوزيع! اتبع الأوامر بالأسفل.")
 
-# 4. كشف الهوية (UX محسن)
+# --- نظام إدارة الأوامر (بعد بدء اللعبة) ---
 if "game" in st.session_state:
     st.divider()
-    player_select = st.selectbox("من أنت؟", ["-- اختر اسمك --"] + players)
     
-    if player_select != "-- اختر اسمك --":
-        data = st.session_state.game[player_select]
-        with st.expander(f"👁️ اضغط هنا يا {player_select}"):
-            st.markdown(f"""
-            <div class="player-card">
-                <h3>{data['icon']} الدور: {data['title']}</h3>
-                <p>🎭 <b>الشخصية:</b> {data['character']}</p>
-                <hr>
-                <p>📍 <b>المكان:</b> {data['location']}</p>
-                <p>🔪 <b>الأداة:</b> {data['weapon']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if "مافيا" in data['title']:
-                st.error("🔥 أنت برا السالفة! لا تنكشف.")
-            st.caption("أغلق هذا المربع فوراً قبل تسليم الهاتف!")
+    # بطاقات توزيع الأدوار (مرحلة الكشف)
+    if st.session_state.step == 1:
+        st.header("Step 1: كشف الأدوار 👁️")
+        st.info("مرر الهاتف لكل لاعب ليفتح الصندوق الخاص به ويحفظ دوره سراً.")
+        
+        player_select = st.selectbox("من أنت؟", ["-- اختر --"] + list(st.session_state.game.keys()))
+        if player_select != "-- اختر --":
+            data = st.session_state.game[player_select]
+            with st.expander("انقر لرؤية هويتك"):
+                st.write(f"🎭 شخصيتك: **{data['character']}**")
+                st.write(f"💼 دورك السري: **{data['role']}**")
+                st.write(f"📍 السالفة: {data['location']}")
+                st.caption("أغلق المربع فوراً!")
+        
+        if st.button("انتهى الجميع؟ انتقل لليل 🌙"):
+            st.session_state.step = 2
+            st.rerun()
 
-# 5. لوحة تحكم القائد (المانيجر)
-st.sidebar.title("🛠️ تحكم المانيجر")
-if st.sidebar.checkbox("كشف قائمة الأدوار"):
-    if "game" in st.session_state:
-        for p, d in st.session_state.game.items():
-            st.sidebar.write(f"{p}: {d['title']} ({d['character']})")
+    # مرحلة الليل
+    elif st.session_state.step == 2:
+        st.header("Step 2: مرحلة الليل 🌙")
+        st.warning("أمر القائد: 'يا أهل المدينة.. ناموا جميعاً وأغلقوا أعينكم!'")
+        
+        with st.expander("1️⃣ استدعاء المافيا (اضغط هنا للمتابعة)"):
+            st.write("أمر القائد: 'يا مافيا استيقظوا.. اختاروا ضحيتكم بصمت'.")
+            st.write(f"المافيا هم: **{', '.join([p for p, d in st.session_state.game.items() if d['role'] == 'مافيا'])}**")
+        
+        with st.expander("2️⃣ استدعاء الطبيب"):
+            st.write("أمر القائد: 'يا دكتور استيقظ.. اختر شخصاً لتعالجه'.")
+            st.write(f"الطبيب هو: **{', '.join([p for p, d in st.session_state.game.items() if d['role'] == 'طبيب'])}**")
 
-if st.sidebar.button("🗑️ إنهاء اللعبة"):
-    st.session_state.clear()
-    st.rerun()
+        with st.expander("3️⃣ استدعاء المحقق"):
+            st.write("أمر القائد: 'يا محقق استيقظ.. اختر شخصاً لتكشف هويته'.")
+            st.write(f"المحقق هو: **{', '.join([p for p, d in st.session_state.game.items() if d['role'] == 'محقق'])}**")
+
+        if st.button("حل الصباح؟ ابدأ النقاش ☀️"):
+            st.session_state.step = 3
+            st.rerun()
+
+    # مرحلة النهار والنقاش
+    elif st.session_state.step == 3:
+        st.header("Step 3: شروق الشمس والنقاش ☀️")
+        st.error("أمر القائد: 'استيقظوا جميعاً.. حدثت جريمة!'")
+        st.markdown(f"""
+        **قواعد النقاش الآن:**
+        1. كل شخص يتحدث بناءً على شخصيته (مثلاً الجراح يتحدث بأسلوب طبي).
+        2. ابدأوا بسؤال بعضكم عن تفاصيل **{SCENARIOS[selected_key]['location']}**.
+        3. المافيا سيحاولون التظاهر بأنهم يعرفون المكان!
+        """)
+        
+        if st.button("بدء التصويت النهائي 🗳️"):
+            st.session_state.step = 4
+            st.rerun()
+
+    # مرحلة التصويت
+    elif st.session_state.step == 4:
+        st.header("Step 4: المحاكمة والتصويت ⚖️")
+        st.write("أمر القائد: 'حان وقت العدالة.. صوتوا على الشخص المشبوه فيه'.")
+        st.info("إذا تم كشف المافيا فاز الصالحون، وإذا عرف المافيا 'السالفة' فاز المافيا!")
+        
+        if st.button("إنهاء الجولة والعودة للرئيسية 🔄"):
+            st.session_state.clear()
+            st.rerun()
+
+# تخصيص المظهر
+st.markdown("<style>button {border-radius: 20px !important;}</style>", unsafe_allow_html=True)
