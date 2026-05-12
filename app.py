@@ -1,62 +1,33 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. إعدادات الصفحة
-st.set_page_config(page_title="مافيا محمد عدنان", page_icon="🕵️", layout="centered")
+# 1. إعدادات Gemini
+genai.configure(api_key="ضع_مفتاحك_هنا") # احصل عليه من AI Studio
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# 2. ضع مفتاح الـ API الخاص بك هنا بين العلامتين
-API_KEY = "AIzaSyB5k4agOUL57Qtm6MDz8UB4SSbcxFeQWc4" 
+st.set_page_config(page_title="مافيا محمد عدنان", page_icon="🕵️‍♂️")
 
-genai.configure(api_key=API_KEY)
-# --- البحث عن الموديل المتاح تلقائياً ---
-try:
-    # يحاول أولاً استخدام Flash 1.5 لأنه الأنسب للألعاب
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    # تجربة بسيطة للتأكد أن الموديل يعمل
-    model.generate_content("test") 
-except Exception:
-    try:
-        # إذا لم يجده، يجرب Pro 1.5
-        model = genai.GenerativeModel('gemini-1.5-pro')
-    except Exception:
-        # إذا فشل كل شيء، يطلب من النظام سرد الموديلات المتاحة ويختار الأول
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        model = genai.GenerativeModel(available_models[0])
-# 3. تهيئة الجلسة (ذاكرة اللعبة)
-if "chat" not in st.session_state:
-    # هنا نضع التعليمات البرمجية لـ "عادل" ليعرف دوره من أول لحظة
-    system_instruction = (
-        "أنت 'عادل'، مدير لعبة المافيا بأسلوب محمد عدنان. "
-        "مهمتك إدارة اللعبة، توزيع الأدوار، وكتابة قصص جرائم مشوقة. "
-        "ابدأ دائماً بالترحيب باللاعبين واسأل عن عددهم وأسمائهم."
-    )
-    st.session_state.chat = model.start_chat(history=[])
-    # إرسال التعليمات في خلفية التطبيق
-    st.session_state.chat.send_message(system_instruction)
+st.title("🕵️‍♂️ مدير لعبة المافيا")
+st.caption("إدارة اللعبة بأسلوب محمد عدنان وذكاء Gemini")
+
+# إنشاء ذاكرة للعبة
+if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# 4. واجهة المستخدم
-st.title("🕵️ مافيا: الجريمة والذكاء")
-st.markdown("---")
+    # رسالة البداية المخفية لضبط القواعد
+    st.session_state.messages.append({"role": "user", "content": "ابدأ اللعبة الآن، رحب بالمدير واطلب منه إدخال أسماء الـ 14 لاعباً."})
 
 # عرض المحادثة
-for message in st.session_state.messages:
+for message in st.session_state.messages[1:]: # تخطي رسالة الإعداد
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# إدخال المدير
-if prompt := st.chat_input("اكتب هنا (مثلاً: نحن 6 لاعبين)..."):
+# إدخال المدير للأوامر
+if prompt := st.chat_input("ماذا حدث الآن؟ (مثلاً: المافيا قتلوا أحمد)"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        response = st.session_state.chat.send_message(prompt)
+        response = model.generate_content(str(st.session_state.messages))
         st.markdown(response.text)
         st.session_state.messages.append({"role": "assistant", "content": response.text})
-
-# زر المسح
-if st.sidebar.button("لعبة جديدة 🔄"):
-    st.session_state.messages = []
-    st.session_state.chat = model.start_chat(history=[])
-    st.rerun()
